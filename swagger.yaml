@@ -1,718 +1,1246 @@
 ---
-swagger: "2.0"
+openapi: 3.0.0
 info:
-  description: "This is a sample server Petstore server.  You can find out more about\
-    \ Swagger at [http://swagger.io](http://swagger.io) or on [irc.freenode.net, #swagger](http://swagger.io/irc/).\
-    \  For this sample, you can use the api key `special-key` to test the authorization\
-    \ filters."
-  version: "1.0.5"
-  title: "Swagger Petstore"
-  termsOfService: "http://swagger.io/terms/"
-  contact:
-    email: "apiteam@swagger.io"
-  license:
-    name: "Apache 2.0"
-    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
-host: "petstore.swagger.io"
-basePath: "/v2"
+  description: "REST API for Element Orchestration (aka eAPI) - eAPI is primarily responsible for provisioning and life cycle of workload optimized entities called as Infrastructure Groups (IG). These IG are used by client applications to deploy their workload clusters like k8s clusters or VMware clusters or HPC clusters"
+  version: "0.9"
+  title: Element API (eAPI)
+
 tags:
-- name: "pet"
-  description: "Everything about your Pets"
-  externalDocs:
-    description: "Find out more"
-    url: "http://swagger.io"
-- name: "store"
-  description: "Access to Petstore orders"
-- name: "user"
-  description: "Operations about user"
-  externalDocs:
-    description: "Find out more about our store"
-    url: "http://swagger.io"
-schemes:
-- "https"
-- "http"
+  - name: Template
+    description: >
+      Templates define workload specific  optimizations applied on a IG. Templates are lifecycle through GitOps.
+
+  - name: Service Group
+    description: >
+      Service Group (SG) defines a isolated space for hosting multiple IG's, which share common network and storage. SG aligns all IG for a particular tenant or a sub-tenant or a project together.
+  - name: Infrastructure Group
+    description: >
+      Infrastructure Group (IG) is a combination of compute, storage and network optimized for running a particular workload. They grouped together and optimized with workload profiles that can be utilized for hosting platform clusters like k8s clusters, hpc clusters, VMware clusters.
+
 paths:
-  /pet/{petId}/uploadImage:
-    post:
+  /templates:
+    get:
       tags:
-      - "pet"
-      summary: "uploads an image"
-      description: ""
-      operationId: "uploadFile"
-      consumes:
-      - "multipart/form-data"
-      produces:
-      - "application/json"
-      parameters:
-      - name: "petId"
-        in: "path"
-        description: "ID of pet to update"
-        required: true
-        type: "integer"
-        format: "int64"
-      - name: "additionalMetadata"
-        in: "formData"
-        description: "Additional data to pass to server"
-        required: false
-        type: "string"
-      - name: "file"
-        in: "formData"
-        description: "file to upload"
-        required: false
-        type: "file"
+        - Template
+      summary: Fetch collection of templates
+      description: Returns a collection of templates used for creating Infrastructure Groups.
+      operationId: ListTemplates
       responses:
-        200:
-          description: "successful operation"
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FetchTemplatesResponse"
+              example:
+                templates:
+                  - id: 12344634-2938-2342-8820-123456677
+                    name: MLOPS-Optimized-v1
+                    description: Creates a MLOPS workload optimized Infrastructure Groups (IG)
+                    type: Terraform
+                    repo: https://github.hpe.com/eapi-templates/mlops-v1
+                    accessToken: 12345-14566
+                    gitRef: 1a410efbd13591db07496601ebc7a059dd55cfe9
+                    state: Released
+                  - id: 12344634-2938-2342-8820-123456677
+                    name: CaaS-GP-v3
+                    description: Creates a CaaS workload optimized Infrastructure Groups (IG)
+                    type: SAT
+                    repo: https://github.hpe.com/eapi-templates/caas-v3
+                    accessToken: 12345-14566
+                    gitRef: cac0cab538b970a37ea1e769cbbde608743bc96d
+                    state: Development
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+  /templates/{templateID}:
+    get:
+      tags:
+        - Template
+      summary: Find a template by templateID
+      description: Returns a single template
+      operationId: getTemplateByID
+      parameters:
+        - name: templateID
+          in: path
+          description: ID of Template
+          required: true
           schema:
-            $ref: "#/definitions/ApiResponse"
-      security:
-      - petstore_auth:
-        - "write:pets"
-        - "read:pets"
-  /pet:
+            type: string
+            example: 12344634-2938-2342-8820-123456677
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FetchTemplateResponse"
+              example:
+                id: 12344634-2938-2342-8820-123456677
+                name: MLOPS-Optimized-v1
+                description: Creates a MLOPS workload optimized Infrastructure Groups (IG)
+                type: Terraform
+                repo: https://github.hpe.com/eapi-templates/mlops-v1
+                accessToken: 12345-14566
+                gitRef: 1a410efbd13591db07496601ebc7a059dd55cfe9
+                state: "Released"
+        "400":
+          description: Invalid Template ID supplied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "403":
+          description: Permission denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "404":
+          description: templateID not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+              example:
+                timeStamp: "2021-04-21T17:32:28Z"
+                status: 404
+                message: "Template ID 12344634-2938-2342-8820-123456677 not found"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+  /service-groups:
+    get:
+      tags:
+        - Service Group
+      summary: Fetch collection of Service Groups
+      description: Returns a collection of Service Groups.
+      operationId: getServiceGroups
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FetchServiceGroupsResponse"
+              example:
+                serviceGroups:
+                  - id: e188af37-dfcd-4b7c-8684-4fc52583e663
+                    name: Coke - MLOPS Service Group
+                    description: ""
+                    company: Coke
+                    location: USA:Texas:AUSL2
+                  - id: d188af37-efcd-5b7c-9684-2fc52583e663
+                    name: Coke - MLOPS Service Group
+                    description: ""
+                    company: Coke
+                    location: USA:WA:SEAL2
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
     post:
       tags:
-      - "pet"
-      summary: "Add a new pet to the store"
+        - Service Group
+      summary: Create a new Service Group
       description: ""
-      operationId: "addPet"
-      consumes:
-      - "application/json"
-      - "application/xml"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - in: "body"
-        name: "body"
-        description: "Pet object that needs to be added to the store"
-        required: true
-        schema:
-          $ref: "#/definitions/Pet"
+      operationId: createServiceGroup
+      requestBody:
+        $ref: "#/components/requestBodies/CreateSGRequestBody"
       responses:
-        405:
-          description: "Invalid input"
-      security:
-      - petstore_auth:
-        - "write:pets"
-        - "read:pets"
+        "200":
+          description: Service Group creation successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateSGResponse"
+              example:
+                id: e188af37-dfcd-4b7c-8684-4fc52583e663
+                name: Coke - MLOPS Service Group
+                description: ""
+                company: Coke
+                location: USA:Texas:AUSL2
+        "400":
+          description: Invalid requst body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "403":
+          description: Permission Denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+  /service-groups/{serviceGroupID}:
+    get:
+      tags:
+        - Service Group
+      summary: Fetch a given Service Group
+      description: ""
+      operationId: fetchServiceGroupByID
+      parameters:
+        - name: serviceGroupID
+          in: path
+          description: Serice Group ID to fetch
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful Operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FetchServiceGroupsResponse"
+              example:
+                id: e188af37-dfcd-4b7c-8684-4fc52583e663
+                name: Coke - MLOPS Service Group
+                description: ""
+                company: Coke
+                location: USA:Texas:AUSL2
+        "404":
+          description: serviceGroupID not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "403":
+          description: Permission denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
     put:
       tags:
-      - "pet"
-      summary: "Update an existing pet"
+        - Service Group
+      summary: Update a given Service Group
       description: ""
-      operationId: "updatePet"
-      consumes:
-      - "application/json"
-      - "application/xml"
-      produces:
-      - "application/json"
-      - "application/xml"
+      operationId: updateServiceGroup
       parameters:
-      - in: "body"
-        name: "body"
-        description: "Pet object that needs to be added to the store"
-        required: true
-        schema:
-          $ref: "#/definitions/Pet"
-      responses:
-        400:
-          description: "Invalid ID supplied"
-        404:
-          description: "Pet not found"
-        405:
-          description: "Validation exception"
-      security:
-      - petstore_auth:
-        - "write:pets"
-        - "read:pets"
-  /pet/findByStatus:
-    get:
-      tags:
-      - "pet"
-      summary: "Finds Pets by status"
-      description: "Multiple status values can be provided with comma separated strings"
-      operationId: "findPetsByStatus"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - name: "status"
-        in: "query"
-        description: "Status values that need to be considered for filter"
-        required: true
-        type: "array"
-        items:
-          type: "string"
-          enum:
-          - "available"
-          - "pending"
-          - "sold"
-          default: "available"
-        collectionFormat: "multi"
-      responses:
-        200:
-          description: "successful operation"
+        - name: serviceGroupID
+          in: path
+          description: Serice Group ID
+          required: true
           schema:
-            type: "array"
-            items:
-              $ref: "#/definitions/Pet"
-        400:
-          description: "Invalid status value"
-      security:
-      - petstore_auth:
-        - "write:pets"
-        - "read:pets"
-  /pet/findByTags:
-    get:
-      tags:
-      - "pet"
-      summary: "Finds Pets by tags"
-      description: "Multiple tags can be provided with comma separated strings. Use\
-        \ tag1, tag2, tag3 for testing."
-      operationId: "findPetsByTags"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - name: "tags"
-        in: "query"
-        description: "Tags to filter by"
-        required: true
-        type: "array"
-        items:
-          type: "string"
-        collectionFormat: "multi"
+            type: string
+      requestBody:
+        $ref: "#/components/requestBodies/UpdateSGRequestBody"
       responses:
-        200:
-          description: "successful operation"
-          schema:
-            type: "array"
-            items:
-              $ref: "#/definitions/Pet"
-        400:
-          description: "Invalid tag value"
-      security:
-      - petstore_auth:
-        - "write:pets"
-        - "read:pets"
-      deprecated: true
-  /pet/{petId}:
-    get:
-      tags:
-      - "pet"
-      summary: "Find pet by ID"
-      description: "Returns a single pet"
-      operationId: "getPetById"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - name: "petId"
-        in: "path"
-        description: "ID of pet to return"
-        required: true
-        type: "integer"
-        format: "int64"
-      responses:
-        200:
-          description: "successful operation"
-          schema:
-            $ref: "#/definitions/Pet"
-        400:
-          description: "Invalid ID supplied"
-        404:
-          description: "Pet not found"
-      security:
-      - api_key: []
-    post:
-      tags:
-      - "pet"
-      summary: "Updates a pet in the store with form data"
-      description: ""
-      operationId: "updatePetWithForm"
-      consumes:
-      - "application/x-www-form-urlencoded"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - name: "petId"
-        in: "path"
-        description: "ID of pet that needs to be updated"
-        required: true
-        type: "integer"
-        format: "int64"
-      - name: "name"
-        in: "formData"
-        description: "Updated name of the pet"
-        required: false
-        type: "string"
-      - name: "status"
-        in: "formData"
-        description: "Updated status of the pet"
-        required: false
-        type: "string"
-      responses:
-        405:
-          description: "Invalid input"
-      security:
-      - petstore_auth:
-        - "write:pets"
-        - "read:pets"
+        "204":
+          description: Service Group updation successful
+        "400":
+          description: Invalid requst body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "403":
+          description: Permission Denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "404":
+          description: serviceGroupID not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
     delete:
       tags:
-      - "pet"
-      summary: "Deletes a pet"
+        - Service Group
+      summary: Delete a given Service Group
       description: ""
-      operationId: "deletePet"
-      produces:
-      - "application/json"
-      - "application/xml"
+      operationId: deleteServiceGroupByID
       parameters:
-      - name: "api_key"
-        in: "header"
-        required: false
-        type: "string"
-      - name: "petId"
-        in: "path"
-        description: "Pet id to delete"
-        required: true
-        type: "integer"
-        format: "int64"
-      responses:
-        400:
-          description: "Invalid ID supplied"
-        404:
-          description: "Pet not found"
-      security:
-      - petstore_auth:
-        - "write:pets"
-        - "read:pets"
-  /store/order:
-    post:
-      tags:
-      - "store"
-      summary: "Place an order for a pet"
-      description: ""
-      operationId: "placeOrder"
-      consumes:
-      - "application/json"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - in: "body"
-        name: "body"
-        description: "order placed for purchasing the pet"
-        required: true
-        schema:
-          $ref: "#/definitions/Order"
-      responses:
-        200:
-          description: "successful operation"
+        - name: serviceGroupID
+          in: path
+          description: Serice Group ID to delete
+          required: true
           schema:
-            $ref: "#/definitions/Order"
-        400:
-          description: "Invalid Order"
-  /store/order/{orderId}:
+            type: string
+      responses:
+        "204":
+          description: Successful Operation
+        "404":
+          description: serviceGroupID not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "403":
+          description: Permission denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+  /service-groups/{serviceGroupID}/infrastructure-groups:
     get:
       tags:
-      - "store"
-      summary: "Find purchase order by ID"
-      description: "For valid response try integer IDs with value >= 1 and <= 10.\
-        \ Other values will generated exceptions"
-      operationId: "getOrderById"
-      produces:
-      - "application/json"
-      - "application/xml"
+        - Infrastructure Group
+      summary: Fetch collection of Infrastructure Groups
+      description: Returns a collection of Infrastructure Groups
+      operationId: getInfrastructureGroups
       parameters:
-      - name: "orderId"
-        in: "path"
-        description: "ID of pet that needs to be fetched"
-        required: true
-        type: "integer"
-        maximum: 10
-        minimum: 1
-        format: "int64"
-      responses:
-        200:
-          description: "successful operation"
+        - name: serviceGroupID
+          in: path
+          description: Serice Group ID
+          required: true
           schema:
-            $ref: "#/definitions/Order"
-        400:
-          description: "Invalid ID supplied"
-        404:
-          description: "Order not found"
-    delete:
-      tags:
-      - "store"
-      summary: "Delete purchase order by ID"
-      description: "For valid response try integer IDs with positive integer value.\
-        \ Negative or non-integer values will generate API errors"
-      operationId: "deleteOrder"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - name: "orderId"
-        in: "path"
-        description: "ID of the order that needs to be deleted"
-        required: true
-        type: "integer"
-        minimum: 1
-        format: "int64"
+            type: string
       responses:
-        400:
-          description: "Invalid ID supplied"
-        404:
-          description: "Order not found"
-  /store/inventory:
-    get:
-      tags:
-      - "store"
-      summary: "Returns pet inventories by status"
-      description: "Returns a map of status codes to quantities"
-      operationId: "getInventory"
-      produces:
-      - "application/json"
-      parameters: []
-      responses:
-        200:
-          description: "successful operation"
-          schema:
-            type: "object"
-            additionalProperties:
-              type: "integer"
-              format: "int32"
-      security:
-      - api_key: []
-  /user/createWithArray:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FetchInfrastructureGroupsResponse"
+              example:
+                infrastructureGroups:
+                  - id: 92384634-2938-2342-8820-489239905423
+                    name: ig-1
+                    tenantID: customername
+                    templateID: 12344634-2938-2342-8820-123456677
+                    gitRef: cac0cab538b970a37ea1e769cbbde608743bc96d
+                    computes:
+                      workloadprofile-1:
+                        - idx: 0
+                          id: 92384634-2938-2342-8820-9890798676
+                          hostName: glhc-master1
+                          location: USA:Texas:AUSL1
+                          osType: SLES15-SP2
+                          hostUUID: 1234566-2938-2342-8820-489239907777
+                          sshKeys: ""
+                          instanceInfo:
+                            type: GP10ib
+                            name: Balanced
+                            model: ProLiant DL360 Gen10
+                          status:
+                            state: New
+                            health: OK
+                          powerState: On
+                          networkConnections:
+                            - networkName: master-net
+                              ipv4Address: 172.28.1.10
+                            - networkName: public
+                              ipv4Address: 10.50.0.10
+                        - idx: 1
+                          id: 92384634-2938-2342-8820-4892399344445
+                          hostName: glhc-master2
+                          location: USA:Texas:AUSL2
+                          osType: SLES15-SP2
+                          hostUUID: 1234566-2938-2342-8820-489239907777
+                          sshKeys: ""
+                          instanceInfo:
+                            type: GP10ib
+                            name: Balanced
+                            model: ProLiant DL360 Gen10
+                          status:
+                            state: New
+                            health: OK
+                          powerState: On
+                          networkConnections:
+                            - networkName: master-net2
+                              ipv4Address: 172.28.1.11
+                            - networkName: public
+                              ipv4Address: 10.50.0.11
+                      workloadprofile-2:
+                        - idx: 0
+                          id: 92384634-2938-2342-8820-9890794576
+                          hostName: glhc-worker1
+                          location: USA:Texas:AUSL1
+                          osType: SLES15-SP2
+                          hostUUID: 1234566-2938-2342-8820-483539907777
+                          sshKeys: ""
+                          instanceInfo:
+                            type: GP10ib
+                            name: Balanced
+                            model: ProLiant DL360 Gen10
+                          status:
+                            state: New
+                            health: OK
+                          powerState: On
+                          networkConnections:
+                            - networkName: worker-net
+                              ipv4Address: 172.28.1.12
+                            - networkName: public
+                              ipv4Address: 10.50.0.12
+                        - idx: 1
+                          id: 92384634-2938-2342-84520-9890794576
+                          hostName: glhc-worker1
+                          location: USA:Texas:AUSL1
+                          osType: SLES15-SP2
+                          hostUUID: 1234566-2938-2342-8560-483539907777
+                          sshKeys: ""
+                          instanceInfo:
+                            type: GP10ib
+                            name: Balanced
+                            model: ProLiant DL360 Gen10
+                          status:
+                            state: New
+                            health: OK
+                          powerState: On
+                          networkConnections:
+                            - networkName: worker-net2
+                              ipv4Address: 172.28.1.14
+                            - networkName: public
+                              ipv4Address: 10.50.0.14
+                  - id: 92384634-2938-2342-8820-489239905423
+                    name: ig-1
+                    tenantID: customername
+                    templateID: 12344634-2938-2342-8820-123456677
+                    gitRef: cac0cab538b970a37ea1e769cbbde608743bc96d
+                    computes:
+                      workloadprofile-1:
+                        - idx: 0
+                          id: 92384634-2938-2342-8820-9890798676
+                          hostName: glhc-master1
+                          location: USA:Texas:AUSL1
+                          osType: SLES15-SP2
+                          hostUUID: 1234566-2938-2342-8820-489239907777
+                          sshKeys: ""
+                          instanceInfo:
+                            type: GP10ib
+                            name: Balanced
+                            model: ProLiant DL360 Gen10
+                          status:
+                            state: New
+                            health: OK
+                          powerState: On
+                          networkConnections:
+                            - networkName: master-net
+                              ipv4Address: 172.28.1.10
+                            - networkName: public
+                              ipv4Address: 10.50.0.10
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
     post:
       tags:
-      - "user"
-      summary: "Creates list of users with given input array"
-      description: ""
-      operationId: "createUsersWithArrayInput"
-      consumes:
-      - "application/json"
-      produces:
-      - "application/json"
-      - "application/xml"
+        - Infrastructure Group
+      summary: Create a new Infrastructure Group
+      description: "Returns the new Infrastructure Group"
+      operationId: createInfrastructureGroup
       parameters:
-      - in: "body"
-        name: "body"
-        description: "List of user object"
-        required: true
-        schema:
-          type: "array"
-          items:
-            $ref: "#/definitions/User"
-      responses:
-        default:
-          description: "successful operation"
-  /user/createWithList:
-    post:
-      tags:
-      - "user"
-      summary: "Creates list of users with given input array"
-      description: ""
-      operationId: "createUsersWithListInput"
-      consumes:
-      - "application/json"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - in: "body"
-        name: "body"
-        description: "List of user object"
-        required: true
-        schema:
-          type: "array"
-          items:
-            $ref: "#/definitions/User"
-      responses:
-        default:
-          description: "successful operation"
-  /user/{username}:
-    get:
-      tags:
-      - "user"
-      summary: "Get user by user name"
-      description: ""
-      operationId: "getUserByName"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - name: "username"
-        in: "path"
-        description: "The name that needs to be fetched. Use user1 for testing. "
-        required: true
-        type: "string"
-      responses:
-        200:
-          description: "successful operation"
+        - name: serviceGroupID
+          in: path
+          description: Serice Group ID
+          required: true
           schema:
-            $ref: "#/definitions/User"
-        400:
-          description: "Invalid username supplied"
-        404:
-          description: "User not found"
+            type: string
+      requestBody:
+        $ref: "#/components/requestBodies/CreateIGRequestBody"
+      responses:
+        "200":
+          description: Infrastructure Group creation successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateIGResponse"
+              example:
+                infrastructureGroups:
+                  - id: 92384634-2938-2342-8820-489239905423
+                    name: ig-1
+                    tenantID: customername
+                    templateID: 12344634-2938-2342-8820-123456677
+                    gitRef: cac0cab538b970a37ea1e769cbbde608743bc96d
+                    computes:
+                      workloadprofile-1:
+                        - idx: 0
+                          id: 92384634-2938-2342-8820-9890798676
+                          hostName: glhc-master1
+                          location: USA:Texas:AUSL1
+                          osType: SLES15-SP2
+                          hostUUID: 1234566-2938-2342-8820-489239907777
+                          sshKeys: ""
+                          instanceInfo:
+                            type: GP10ib
+                            name: Balanced
+                            model: ProLiant DL360 Gen10
+                          status:
+                            state: New
+                            health: OK
+                          powerState: On
+                          networkConnections:
+                            - networkName: master-net
+                              ipv4Address: 172.28.1.10
+                            - networkName: public
+                              ipv4Address: 10.50.0.10
+                        - idx: 1
+                          id: 92384634-2938-2342-8820-4892399344445
+                          hostName: glhc-master2
+                          location: USA:Texas:AUSL2
+                          osType: SLES15-SP2
+                          hostUUID: 1234566-2938-2342-8820-489239907777
+                          sshKeys: ""
+                          instanceInfo:
+                            type: GP10ib
+                            name: Balanced
+                            model: ProLiant DL360 Gen10
+                          status:
+                            state: New
+                            health: OK
+                          powerState: On
+                          networkConnections:
+                            - networkName: master-net2
+                              ipv4Address: 172.28.1.11
+                            - networkName: public
+                              ipv4Address: 10.50.0.11
+                      workloadprofile-2:
+                        - idx: 0
+                          id: 92384634-2938-2342-8820-9890794576
+                          hostName: glhc-worker1
+                          location: USA:Texas:AUSL1
+                          osType: SLES15-SP2
+                          hostUUID: 1234566-2938-2342-8820-483539907777
+                          sshKeys: ""
+                          instanceInfo:
+                            type: GP10ib
+                            name: Balanced
+                            model: ProLiant DL360 Gen10
+                          status:
+                            state: New
+                            health: OK
+                          powerState: On
+                          networkConnections:
+                            - networkName: worker-net
+                              ipv4Address: 172.28.1.12
+                            - networkName: public
+                              ipv4Address: 10.50.0.12
+                        - idx: 1
+                          id: 92384634-2938-2342-84520-9890794576
+                          hostName: glhc-worker1
+                          location: USA:Texas:AUSL1
+                          osType: SLES15-SP2
+                          hostUUID: 1234566-2938-2342-8560-483539907777
+                          sshKeys: ""
+                          instanceInfo:
+                            type: GP10ib
+                            name: Balanced
+                            model: ProLiant DL360 Gen10
+                          status:
+                            state: New
+                            health: OK
+                          powerState: On
+                          networkConnections:
+                            - networkName: worker-net2
+                              ipv4Address: 172.28.1.14
+                            - networkName: public
+                              ipv4Address: 10.50.0.14
+        "400":
+          description: Invalid requst body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "403":
+          description: Permission Denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "404":
+          description: serviceGroupID not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+  ? /service-groups/{serviceGroupID}/infrastructure-groups/{infrastructureGroupID}
+  : get:
+      tags:
+        - Infrastructure Group
+      summary: Fetch a given Infrastructure Group
+      description: ""
+      operationId: fetchInfrastructureGroupByID
+      parameters:
+        - name: serviceGroupID
+          in: path
+          description: Serice Group ID to which a given Infrastructure Group belongs to
+          required: true
+          schema:
+            type: string
+        - name: infrastructureGroupID
+          in: path
+          description: Infrastructure Group ID to fetch
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful Operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FetchInfrastructureGroupsResponse"
+              example:
+                infrastructureGroups:
+                  - id: 92384634-2938-2342-8820-489239905423
+                    name: ig-1
+                    tenantID: customername
+                    templateID: 12344634-2938-2342-8820-123456677
+                    gitRef: cac0cab538b970a37ea1e769cbbde608743bc96d
+                    computes:
+                      workloadprofile-1:
+                        - idx: 0
+                          id: 92384634-2938-2342-8820-9890798676
+                          hostName: glhc-master1
+                          location: USA:Texas:AUSL1
+                          osType: SLES15-SP2
+                          hostUUID: 1234566-2938-2342-8820-489239907777
+                          sshKeys: ""
+                          instanceInfo:
+                            type: GP10ib
+                            name: Balanced
+                            model: ProLiant DL360 Gen10
+                          status:
+                            state: New
+                            health: OK
+                          powerState: On
+                          networkConnections:
+                            - networkName: master-net
+                              ipv4Address: 172.28.1.10
+                            - networkName: public
+                              ipv4Address: 10.50.0.10
+                        - idx: 1
+                          id: 92384634-2938-2342-8820-4892399344445
+                          hostName: glhc-master2
+                          location: USA:Texas:AUSL2
+                          osType: SLES15-SP2
+                          hostUUID: 1234566-2938-2342-8820-489239907777
+                          sshKeys: ""
+                          instanceInfo:
+                            type: GP10ib
+                            name: Balanced
+                            model: ProLiant DL360 Gen10
+                          status:
+                            state: New
+                            health: OK
+                          powerState: On
+                          networkConnections:
+                            - networkName: master-net2
+                              ipv4Address: 172.28.1.11
+                            - networkName: public
+                              ipv4Address: 10.50.0.11
+        "404":
+          description: serviceGroupID or infrastructureGroupID not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "403":
+          description: Permission denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
     put:
       tags:
-      - "user"
-      summary: "Updated user"
-      description: "This can only be done by the logged in user."
-      operationId: "updateUser"
-      consumes:
-      - "application/json"
-      produces:
-      - "application/json"
-      - "application/xml"
+        - Infrastructure Group
+      summary: Update a given Infrastructure Group
+      description: ""
+      operationId: updateInfrastructureGroup
       parameters:
-      - name: "username"
-        in: "path"
-        description: "name that need to be updated"
-        required: true
-        type: "string"
-      - in: "body"
-        name: "body"
-        description: "Updated user object"
-        required: true
-        schema:
-          $ref: "#/definitions/User"
+        - name: serviceGroupID
+          in: path
+          description: Serice Group ID to which a given Infrastructure Group belongs to
+          required: true
+          schema:
+            type: string
+        - name: infrastructureGroupID
+          in: path
+          description: Infrastructure Group ID to update
+          required: true
+          schema:
+            type: string
+      requestBody:
+        $ref: "#/components/requestBodies/UpdateIGRequestBody"
       responses:
-        400:
-          description: "Invalid user supplied"
-        404:
-          description: "User not found"
+        "202":
+          description: Infrastructure Group updation request accepted
+        "400":
+          description: Invalid requst body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "403":
+          description: Permission Denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "404":
+          description: serviceGroupID or infrastructureGroupID not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
     delete:
       tags:
-      - "user"
-      summary: "Delete user"
-      description: "This can only be done by the logged in user."
-      operationId: "deleteUser"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - name: "username"
-        in: "path"
-        description: "The name that needs to be deleted"
-        required: true
-        type: "string"
-      responses:
-        400:
-          description: "Invalid username supplied"
-        404:
-          description: "User not found"
-  /user/login:
-    get:
-      tags:
-      - "user"
-      summary: "Logs user into the system"
+        - Infrastructure Group
+      summary: Delete a given Infrastructure Group
       description: ""
-      operationId: "loginUser"
-      produces:
-      - "application/json"
-      - "application/xml"
+      operationId: deleteInfrastructureGroupByID
       parameters:
-      - name: "username"
-        in: "query"
-        description: "The user name for login"
-        required: true
-        type: "string"
-      - name: "password"
-        in: "query"
-        description: "The password for login in clear text"
-        required: true
-        type: "string"
-      responses:
-        200:
-          description: "successful operation"
-          headers:
-            X-Expires-After:
-              type: "string"
-              format: "date-time"
-              description: "date in UTC when token expires"
-            X-Rate-Limit:
-              type: "integer"
-              format: "int32"
-              description: "calls per hour allowed by the user"
+        - name: serviceGroupID
+          in: path
+          description: Serice Group ID to which a given Infrastructure Group belongs to
+          required: true
           schema:
-            type: "string"
-        400:
-          description: "Invalid username/password supplied"
-  /user/logout:
-    get:
+            type: string
+        - name: infrastructureGroupID
+          in: path
+          description: Infrastructure Group ID to delete
+          required: true
+          schema:
+            type: string
+      responses:
+        "202":
+          description: Infrastructure Group deletion request accepted
+        "404":
+          description: serviceGroupID or infrastructureGroupID not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "403":
+          description: Permission denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+  ? /service-groups/{serviceGroupID}/infrastructure-groups/{infrastructureGroupID}/actions/{actionName}
+  : post:
       tags:
-      - "user"
-      summary: "Logs out current logged in user session"
+        - Infrastructure Group
+      summary: Perform action on a given Infrastructure Group
       description: ""
-      operationId: "logoutUser"
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters: []
-      responses:
-        default:
-          description: "successful operation"
-  /user:
-    post:
-      tags:
-      - "user"
-      summary: "Create user"
-      description: "This can only be done by the logged in user."
-      operationId: "createUser"
-      consumes:
-      - "application/json"
-      produces:
-      - "application/json"
-      - "application/xml"
+      operationId: actionOnInfrastructureGroup
       parameters:
-      - in: "body"
-        name: "body"
-        description: "Created user object"
-        required: true
-        schema:
-          $ref: "#/definitions/User"
+        - name: serviceGroupID
+          in: path
+          description: Serice Group ID to which a given Infrastructure Group belongs to
+          required: true
+          schema:
+            type: string
+        - name: infrastructureGroupID
+          in: path
+          description: Infrastructure Group ID on which a given action need to be performed
+          required: true
+          schema:
+            type: string
+        - name: actionName
+          in: path
+          description: name of action to be performed on Infrastructure Group
+          required: true
+          schema:
+            type: string
+            enum: ["expand", "shrink", "service"]
+      requestBody:
+        $ref: "#/components/requestBodies/ActionOnIGRequestBody"
       responses:
-        default:
-          description: "successful operation"
-securityDefinitions:
-  api_key:
-    type: "apiKey"
-    name: "api_key"
-    in: "header"
-  petstore_auth:
-    type: "oauth2"
-    authorizationUrl: "https://petstore.swagger.io/oauth/authorize"
-    flow: "implicit"
-    scopes:
-      read:pets: "read your pets"
-      write:pets: "modify pets in your account"
-definitions:
-  ApiResponse:
-    type: "object"
-    properties:
-      code:
-        type: "integer"
-        format: "int32"
-      type:
-        type: "string"
-      message:
-        type: "string"
-  Category:
-    type: "object"
-    properties:
-      id:
-        type: "integer"
-        format: "int64"
-      name:
-        type: "string"
-    xml:
-      name: "Category"
-  Pet:
-    type: "object"
-    required:
-    - "name"
-    - "photoUrls"
-    properties:
-      id:
-        type: "integer"
-        format: "int64"
-      category:
-        $ref: "#/definitions/Category"
-      name:
-        type: "string"
-        example: "doggie"
-      photoUrls:
-        type: "array"
-        xml:
-          wrapped: true
-        items:
-          type: "string"
-          xml:
-            name: "photoUrl"
-      tags:
-        type: "array"
-        xml:
-          wrapped: true
-        items:
-          xml:
-            name: "tag"
-          $ref: "#/definitions/Tag"
-      status:
-        type: "string"
-        description: "pet status in the store"
-        enum:
-        - "available"
-        - "pending"
-        - "sold"
-    xml:
-      name: "Pet"
-  Tag:
-    type: "object"
-    properties:
-      id:
-        type: "integer"
-        format: "int64"
-      name:
-        type: "string"
-    xml:
-      name: "Tag"
-  Order:
-    type: "object"
-    properties:
-      id:
-        type: "integer"
-        format: "int64"
-      petId:
-        type: "integer"
-        format: "int64"
-      quantity:
-        type: "integer"
-        format: "int32"
-      shipDate:
-        type: "string"
-        format: "date-time"
-      status:
-        type: "string"
-        description: "Order Status"
-        enum:
-        - "placed"
-        - "approved"
-        - "delivered"
-      complete:
-        type: "boolean"
-    xml:
-      name: "Order"
-  User:
-    type: "object"
-    properties:
-      id:
-        type: "integer"
-        format: "int64"
-      username:
-        type: "string"
-      firstName:
-        type: "string"
-      lastName:
-        type: "string"
-      email:
-        type: "string"
-      password:
-        type: "string"
-      phone:
-        type: "string"
-      userStatus:
-        type: "integer"
-        format: "int32"
-        description: "User Status"
-    xml:
-      name: "User"
+        "202":
+          description: Infrastructure Group updation request accepted
+        "400":
+          description: Invalid requst body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "403":
+          description: Permission Denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "404":
+          description: serviceGroupID or infrastructureGroupID not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+
 externalDocs:
-  description: "Find out more about Swagger"
-  url: "http://swagger.io"
+  description: Find out more about Element API
+  url: https://rndwiki.corp.hpecorp.net/confluence/display/esp/Element+API
+servers:
+  - url: https://eapi.hpe.com/rest/v1
+components:
+  requestBodies:
+    CreateSGRequestBody:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/CreateSGRequest"
+      description: ""
+      required: true
+    UpdateSGRequestBody:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/UpdateSGRequest"
+      description: ""
+      required: true
+    CreateIGRequestBody:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/CreateIGRequest"
+      description: ""
+      required: true
+    UpdateIGRequestBody:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/UpdateIGRequest"
+      description: ""
+      required: true
+    ActionOnIGRequestBody:
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: "#/components/schemas/ExpandIGRequest"
+              - $ref: "#/components/schemas/ShrinkIGRequest"
+              - $ref: "#/components/schemas/ServiceIGRequest"
+      description: ""
+      required: true
+  schemas:
+    FetchTemplatesResponse:
+      type: array
+      minItems: 1
+      items:
+        $ref: "#/components/schemas/FetchTemplateResponse"
+    FetchTemplateResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        type:
+          type: string
+          enum: [Terraform, SAT]
+        repo:
+          type: string
+        accessToken:
+          type: string
+        gitRef:
+          type: string
+        state:
+          type: string
+          enum: [Released, Development, Test, Deprecated]
+    CreateSGRequest:
+      type: object
+      required:
+        - name
+        - tenantID
+        - location
+      properties:
+        name:
+          type: string
+          example: Coke - MLOPS Service Group
+        desription:
+          type: string
+          example: Service Group binds all InfrastructureGroups for a particular tenant or a sub-tenant together
+        tenantID:
+          type: string
+          example: Coke
+        location:
+          type: string
+          example: USA:Texas:AUSL2
+    CreateSGResponse:
+      $ref: "#/components/schemas/FetchServiceGroupsResponse"
+    UpdateSGRequest:
+      type: object
+      required:
+        - name
+        - tenantID
+        - location
+      properties:
+        name:
+          type: string
+          example: Coke - MLOPS Service Group
+        desription:
+          type: string
+          example: Service Group binds all InfrastructureGroups for a particular tenant or a sub-tenant together
+        tenantID:
+          type: string
+          example: Coke
+        location:
+          type: string
+          example: USA:Texas:AUSL2
+    FetchServiceGroupsResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        tenantID:
+          type: string
+          enum: [Terraform, SAT]
+        location:
+          type: string
+    CreateIGRequest:
+      type: object
+      required:
+        - name
+        - SGID
+        - templateID
+        - parameters
+      properties:
+        name:
+          type: string
+          example: IG-1-FinanceWorkloads
+        description:
+          type: string
+          example: InfrastructureGroups is a combination of compute, storage and network.
+        templateID:
+          type: string
+          example: Coke
+        parameters:
+          type: object
+          properties:
+            computes:
+              type: array
+              minItems: 1
+              items:
+                $ref: "#/components/schemas/CreateIGRequestParameters"
+    CreateIGResponse:
+      type: object
+      properties:
+        name:
+          type: string
+        id:
+          type: string
+        tenantID:
+          type: string
+        templateID:
+          type: string
+        gitRef:
+          type: string
+        computes:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/CreateIGResponseCompute"
+
+    UpdateIGRequest:
+      type: object
+      required:
+        - name
+        - templateID
+        - parameters
+      properties:
+        name:
+          type: string
+          example: IG for MLOps
+        desription:
+          type: string
+          example: IG for MLOps workload
+        templateID:
+          type: string
+          example: CustomerfacingID
+        parameters:
+          type: object
+          properties:
+            computes:
+              type: array
+              minItems: 1
+              items:
+                $ref: "#/components/schemas/CreateIGRequestParameters"
+    CreateIGResponseCompute:
+      type: object
+      properties:
+        workloadprofile:
+          type: object
+          properties:
+            idx:
+              type: integer
+            id:
+              type: string
+            hostName:
+              type: string
+            location:
+              type: string
+            osType:
+              type: string
+            hostUUID:
+              type: string
+            sshKeys:
+              type: string
+            instanceInfo:
+              type: object
+              properties:
+                instanceType:
+                  type: string
+                name:
+                  type: string
+                model:
+                  type: string
+            status:
+              type: object
+              properties:
+                state:
+                  type: string
+                  enum:
+                    [
+                      New,
+                      Deleting,
+                      Deleted,
+                      Failed,
+                      Allocating,
+                      Imaging,
+                      Ready,
+                      Online,
+                      Service,
+                    ]
+                health:
+                  type: string
+                  enum: [OK, Warning, Critical]
+            powerState:
+              type: string
+              enum: [On, Off, PoweringOn, PoweringOff]
+            networkConnections:
+              type: array
+              minItems: 1
+              items:
+                type: object
+                properties:
+                  networkName:
+                    type: string
+                  ipv4Address:
+                    type: string
+    UpdateIGRequestCompute:
+      type: object
+    FetchInfrastructureGroupsResponse:
+      type: object
+      properties:
+        name:
+          type: string
+        id:
+          type: string
+        tenantID:
+          type: string
+        templateID:
+          type: string
+        gitRef:
+          type: string
+        computes:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/CreateIGResponseCompute"
+    CreateIGRequestParameters:
+      type: array
+      minItems: 1
+      items:
+        type: object
+        properties:
+          name:
+            type: string
+            example: master-profile
+          count:
+            type: integer
+            example: 2
+          instanceType:
+            type: string
+            example: GP10ib
+          network:
+            type: array
+            minItems: 1
+            items:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: private
+                count:
+                  type: integer
+                  example: 2
+          ssh:
+            type: object
+            properties:
+              public_key:
+                type: "string"
+          tags:
+            type: string
+    ExpandIGRequest:
+      type: object
+    ShrinkIGRequest:
+      type: object
+    ServiceIGRequest:
+      type: object
+    ApiResponse:
+      type: object
+      properties:
+        timeStamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+          minimum: 100
+          maximum: 599
+        message:
+          type: string
