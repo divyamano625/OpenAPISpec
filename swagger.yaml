@@ -1,8 +1,6 @@
 ---
 openapi: 3.0.0
 info:
-  description:openapi: 3.0.0
-info:
   description: "REST API for Element Orchestration (aka eAPI) – eAPI provides access to HPE Element modules through REST API’s. eAPI abstracts the placement of workloads across element modules using logical constructs called as Infrastruture Group(IG).  IG’s are fully provisioned, workload optimized, isolated group of compute, storage and network.
 These IG’s can be used by client applications to deploy their workload clusters like k8s clusters or VMware clusters or HPC clusters.
 These IG shall support life cycle operations like expansion, shrink, patching, updates and servicing."
